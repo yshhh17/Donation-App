@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException, status, Depends, APIRouter
+from fastapi import FastAPI, HTTPException, status, Depends, APIRouter, Request
+import hmac
+import hashlib
 from sqlalchemy.orm import Session
 from ..db.database import get_db
 from ..db.models import Donation, User
@@ -11,6 +13,9 @@ from ..schemas.donation import (
 from ..core.security import get_current_user
 from ..services.paypal_service import paypal_service
 from typing import List
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/donations",
@@ -20,6 +25,8 @@ router = APIRouter(
 @router.post("/create-order", response_model=PayPalOrderResponse)
 async def create_donation_order(donation: DonationCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
+        logger.info(f"User {current_user.id} creating donation order for ${donation.amount}")
+
         order = await paypal_service.create_order(
         amount=donation.amount,
         currency="USD"
@@ -41,12 +48,15 @@ async def create_donation_order(donation: DonationCreate, current_user: User = D
         db.commit()
         db.refresh(new_donation)
 
+        logger.info(f"Order created: {order['id']}")
+
         return {
             "order_id": order["id"],
             "status": order["status"],
             "approval_url": approval_url
         }
     except Exception as e:
+        logger.error(f"Error creating order: {str(e)}")
         db.rollback()
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail=str(e))
@@ -55,9 +65,12 @@ async def create_donation_order(donation: DonationCreate, current_user: User = D
 async def capture_donation_order(capture_request: PayPalCaptureRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 
     try:
+        logger.info(f"created a capture order request for user: {current_user.id}")
+
         result = await paypal_service.capture_order(capture_request.order_id)
 
         if result["status"] != "COMPLETED":
+            logger.error(f"order failed to capture")
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
             detail="Payment capture Failed")
 
@@ -74,6 +87,8 @@ async def capture_donation_order(capture_request: PayPalCaptureRequest, current_
         db.commit()
         db.refresh(donation)
 
+        logger.info(f"order captured successfully")
+
         return donation
 
     except HTTPException as e:
@@ -85,8 +100,13 @@ async def capture_donation_order(capture_request: PayPalCaptureRequest, current_
         detail=str(e))
 
 @router.get("/my-donations", response_model=List[DonationResponse])
-def get_my_donations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    donations = db.query(Donation).filter(Donation.user_id == current_user.id).all()
+def get_my_donations(skip: int = 0,limit: int = 10,db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    donations = db.query(Donation).filter(Donation.user_id == current_user.id).order_by(Donation.created_at.desc()).offset(skip).limit(limit).all()
+
+    if not donations:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"no donations has been done yet")
+
     return donations
 
 @router.get("/{donation_id}", response_model=DonationResponse)
@@ -111,3 +131,31 @@ async def verify_order_status(order_id: str, current_user: User = Depends(get_cu
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail=str(e))
+
+    @router.post("/paypal-webhook")
+    async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
+        body = await request.body()
+        headers = request.headers
+        
+        payload = await request.json()
+        event_type = payload.get("event_type")
+        
+        if event_type == "PAYMENT.CAPTURE.COMPLETED":
+            # Payment was captured
+            order_id = payload["resource"]["supplementary_data"]["related_ids"]["order_id"]
+            
+            # Update donation in database
+            donation = db.query(Donation).filter(
+                Donation.payment_reference == order_id
+            ).first()
+            
+            if donation and not donation.status:
+                donation.status = True
+                user = db.query(User).filter(User.id == donation.user_id).first()
+                if user:
+                    user.total_donated += donation.amount
+                db.commit()
+            
+            return {"status": "success"}
+        
+        return {"status": "received"}
