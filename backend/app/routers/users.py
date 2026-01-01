@@ -22,8 +22,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
     otp = generate_otp()
-    print(otp)
-    store_otp(user.email, otp)
+    await store_otp(user.email, otp)
     send_otp_email(user.email, otp)
     return {
         "message": "Registration successful! please verify your email",
@@ -32,12 +31,11 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/verify-email")
 async def verify_otp(data: VerifyOtp, db: Session = Depends(get_db)):
-    stored_otp = redis_client.get(f"otp:{data.email}")
-    print(store_otp)
+    stored_otp = await redis_client.get(f"otp:{data.email}")
     if not stored_otp:
         raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT,
         detail="OTP expired")
-    if stored_otp != data.email:
+    if stored_otp != data.otp:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
         detail="Invalid OTP, Try again")
 

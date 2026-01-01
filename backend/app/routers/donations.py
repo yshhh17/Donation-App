@@ -14,6 +14,7 @@ from ..core.security import get_current_user
 from ..services.paypal_service import paypal_service
 from typing import List
 import logging
+from ..services.email import send_payment_done_email
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,8 @@ async def capture_donation_order(capture_request: PayPalCaptureRequest, current_
 
         db.commit()
         db.refresh(donation)
+
+        send_payment_done_email(current_user.email, donation.amount)
 
         logger.info(f"order captured successfully")
 
