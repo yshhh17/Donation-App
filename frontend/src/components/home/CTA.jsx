@@ -1,24 +1,31 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Button from '../Button';
 
-const CTA = ({ isAuthenticated }) => {
+const CTA = () => {
+  const navigate = useNavigate();
+
   return (
-    <section className="py-16 bg-blue-600 text-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-3xl md:text-4xl font-bold mb-4">
-          Ready to Make an Impact?
-        </h2>
-        <p className="text-lg mb-8 opacity-90">
-          Join our community of donors today. 
-        </p>
-        {! isAuthenticated && (
-          <Link to="/register">
-            <Button className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3">
-              Sign Up Now
-            </Button>
-          </Link>
-        )}
+    <section className="w-full py-20 md:py-24 bg-gradient-to-r from-blue-600 to-blue-700">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          {/* Headline */}
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6">
+            Ready to Make an Impact? 
+          </h2>
+
+          {/* Subtext */}
+          <p className="text-lg sm:text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+            Join our community of donors and start making a difference today.  
+            Every contribution counts. 
+          </p>
+
+          {/* CTA Button */}
+          <Button 
+            onClick={() => navigate('/register')}>
+            Get Started Now
+          </Button>
+        </div>
       </div>
     </section>
   );

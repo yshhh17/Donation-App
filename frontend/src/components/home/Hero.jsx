@@ -1,32 +1,47 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Button from '../Button';
 
-const Hero = ({ isAuthenticated }) => {
+const Hero = () => {
+  const navigate = useNavigate();
+
   return (
-    <section className="w-full bg-blue-600 text-white py-24 md:py-32">
-      <div className="w-full px-6 md:px-12 lg:px-20 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6">
-          Make a Difference Today
-        </h1>
-        <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto">
-          Secure and transparent donation platform.  Start making an impact now.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          {isAuthenticated ? (
-            <Link to="/donate">
-              <Button className="w-full sm:w-auto">Donate Now</Button>
-            </Link>
-          ) : (
-            <>
-              <Link to="/register" className="w-full sm:w-auto">
-                <Button className="w-full">Get Started</Button>
-              </Link>
-              <Link to="/login" className="w-full sm:w-auto">
-                <Button variant="secondary" className="w-full">Login</Button>
-              </Link>
-            </>
-          )}
+    <section className="w-full bg-gradient-to-b from-blue-50 to-white py-20 md:py-32">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-4xl mx-auto">
+          {/* Main Headline */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+            Make a Difference with{' '}
+            <span className="text-blue-600">Every Donation</span>
+          </h1>
+
+          {/* Subheadline */}
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+            Join thousands of donors making a real impact.  Secure, transparent, 
+            and instant donations powered by PayPal.
+          </p>
+
+          {/* CTA Button */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Button 
+              variant="primary" 
+              size="lg"
+              onClick={() => navigate('/register')}
+              className="w-full sm:w-auto px-8 py-4 text-lg"
+            >
+              Start Donating
+            </Button>
+            <Button 
+              variant="secondary" 
+              size="lg"
+              onClick={() => navigate('/login')}
+              className="w-full sm:w-auto px-8 py-4 text-lg"
+            >
+              Login
+            </Button>
+          </div>
+
+          {/* Optional:  Trust Badge */}
         </div>
       </div>
     </section>
