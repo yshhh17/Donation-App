@@ -14,6 +14,9 @@ import Donate from './pages/Donate';
 import MyDonations from './pages/MyDonations';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentFailure from './pages/PaymentFailure';
+import About from './pages/About';
+import Privacy from './pages/Privacy';
+import { AuthProvider } from './context/AuthContext';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -26,49 +29,53 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/verify-email" element={<EmailVerify />} />
-            
-            {/* Protected Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/donate"
-              element={
-                <ProtectedRoute>
-                  <Donate />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/my-donations"
-              element={
-                <ProtectedRoute>
-                  <MyDonations />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/payment-success" element={<PaymentSuccess />} />
-            <Route path="/payment-failure" element={<PaymentFailure />} />
-          </Routes>
-        </main>
-        <Footer />
-        <ToastContainer position="top-right" autoClose={3000} />
-      </div>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+          <Navbar />
+          <main className="flex-grow">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<EmailVerify />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy" element={<Privacy />} />
+              
+              {/* Protected Routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/donate"
+                element={
+                  <ProtectedRoute>
+                    <Donate />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-donations"
+                element={
+                  <ProtectedRoute>
+                    <MyDonations />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-failure" element={<PaymentFailure />} />
+            </Routes>
+          </main>
+          <Footer />
+          <ToastContainer position="top-right" autoClose={3000} />
+        </div>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

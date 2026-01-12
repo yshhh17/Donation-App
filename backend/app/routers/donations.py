@@ -83,6 +83,12 @@ async def capture_donation_order(request: Request,capture_request: PayPalCapture
         if not donation:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
             detail="Donation not found")
+
+        # Verify amount matches
+        captured_amount = float(result["purchase_units"][0]["payments"]["captures"][0]["amount"]["value"])
+        if abs(captured_amount - float(donation.amount)) > 0.01:
+            logger.error(f"Payment tampering detected: expected {donation.amount}, got {captured_amount}")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Payment amount mismatch")
         
         donation.status = True
 
@@ -118,7 +124,7 @@ def get_my_donations(request: Request,skip: int = 0,limit: int = 10,db: Session 
 
 @router.get("/{donation_id}", response_model=DonationResponse)
 @limiter.limit("20/minute")
-def get_donation(request: Request,current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_donation(request: Request, donation_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     donation = db.query(Donation).filter(Donation.id == donation_id, Donation.user_id == current_user.id).first()
 
     if not donation:
@@ -141,30 +147,30 @@ async def verify_order_status(request: Request,order_id: str, current_user: User
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail=str(e))
 
-    @router.post("/paypal-webhook")
-    async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
-        body = await request.body()
-        headers = request.headers
+@router.post("/paypal-webhook")
+async def paypal_webhook(request: Request, db: Session = Depends(get_db)):
+    body = await request.body()
+    headers = request.headers
+    
+    payload = await request.json()
+    event_type = payload.get("event_type")
+    
+    if event_type == "PAYMENT.CAPTURE.COMPLETED":
+        # Payment was captured
+        order_id = payload["resource"]["supplementary_data"]["related_ids"]["order_id"]
         
-        payload = await request.json()
-        event_type = payload.get("event_type")
+        # Update donation in database
+        donation = db.query(Donation).filter(
+            Donation.payment_reference == order_id
+        ).first()
         
-        if event_type == "PAYMENT.CAPTURE.COMPLETED":
-            # Payment was captured
-            order_id = payload["resource"]["supplementary_data"]["related_ids"]["order_id"]
-            
-            # Update donation in database
-            donation = db.query(Donation).filter(
-                Donation.payment_reference == order_id
-            ).first()
-            
-            if donation and not donation.status:
-                donation.status = True
-                user = db.query(User).filter(User.id == donation.user_id).first()
-                if user:
-                    user.total_donated += donation.amount
-                db.commit()
-            
-            return {"status": "success"}
+        if donation and not donation.status:
+            donation.status = True
+            user = db.query(User).filter(User.id == donation.user_id).first()
+            if user:
+                user.total_donated += donation.amount
+            db.commit()
         
-        return {"status": "received"}
+        return {"status": "success"}
+    
+    return {"status": "received"}

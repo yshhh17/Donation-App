@@ -56,7 +56,7 @@ const MyDonations = () => {
                         {formatDate(donation.created_at)}
                       </td>
                       <td className="px-6 py-4 text-sm font-mono text-gray-600">
-                        {donation.order_id}
+                        {donation.payment_reference}
                       </td>
                       <td className="px-6 py-4 text-sm font-bold text-gray-900">
                         {formatCurrency(donation.amount)}

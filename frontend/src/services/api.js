@@ -26,7 +26,8 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Check if the error is 401 and NOT from the login endpoint itself
+    if (error.response?.status === 401 && !error.config.url.includes('/login')) {
       // Unauthorized - clear storage and redirect to login
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER);

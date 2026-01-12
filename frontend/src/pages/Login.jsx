@@ -39,12 +39,12 @@ const Login = () => {
 
     setLoading(true);
 
-    try {
-      await login(formData);
+    const result = await login(formData);
+    
+    if (result.success) {
       navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid email or password');
-    } finally {
+    } else {
+      setError(result.message);
       setLoading(false);
     }
   };

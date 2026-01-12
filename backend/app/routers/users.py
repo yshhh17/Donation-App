@@ -21,6 +21,14 @@ router = APIRouter(
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/hour")
 async def create_user(request: Request,user: UserCreate, db: Session = Depends(get_db)):
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User with this email already exists"
+        )
+
     user.password = hash_password(user.password)
     new_user = User(name= user.name, email=user.email, password=user.password)
     db.add(new_user)
