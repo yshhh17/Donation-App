@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     from_email: str
     paypal_webhook_id: str
     frontend_url: str
+    redis_user: str
+    redis_pass: str
 
     class Config:
         env_file = ".env"

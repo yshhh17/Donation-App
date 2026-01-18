@@ -2,6 +2,7 @@ from redis.asyncio import Redis
 import random
 from ..core.config import settings
 import asyncio
+import redis
 
 redis_client = Redis(host=settings.redis_host, port=settings.redis_port, decode_responses=True)
 
